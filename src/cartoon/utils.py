@@ -49,7 +49,7 @@ def get_image_by_url(image_url):
 
 
 class BrowserTool:
-    def __init__(self, chrome_exe_path=r'D:\small tools\chromedriver_76.0.3809.68.exe'):
+    def __init__(self, chrome_exe_path=r'.\chromedriver_76.0.3809.68.exe'):
         option = webdriver.ChromeOptions()
         option.add_argument('--headless')
         self.browser = webdriver.Chrome(executable_path=chrome_exe_path, chrome_options=option)
