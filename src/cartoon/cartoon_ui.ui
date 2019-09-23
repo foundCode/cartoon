@@ -89,13 +89,13 @@
      </rect>
     </property>
    </widget>
-   <widget class="QLabel" name="label_chapter_image">
+   <widget class="QLabel" name="label_fragment_image">
     <property name="geometry">
      <rect>
       <x>490</x>
       <y>20</y>
       <width>361</width>
-      <height>501</height>
+      <height>491</height>
      </rect>
     </property>
     <property name="text">
@@ -109,12 +109,19 @@
     <property name="geometry">
      <rect>
       <x>490</x>
-      <y>530</y>
+      <y>520</y>
       <width>361</width>
-      <height>24</height>
+      <height>25</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QPushButton" name="push_button_previous_fragment">
+       <property name="text">
+        <string>&lt;</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
@@ -142,14 +149,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="line_edit_now_chapter_section">
+      <widget class="QLineEdit" name="line_edit_fragment_index">
        <property name="text">
         <string>0</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_num_chapter_section">
+      <widget class="QLabel" name="label_num_fragment">
        <property name="text">
         <string>/0)</string>
        </property>
@@ -170,6 +177,13 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="push_button_next_fragment">
+       <property name="text">
+        <string>&gt;</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>

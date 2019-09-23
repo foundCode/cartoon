@@ -44,7 +44,7 @@ def get_image_by_url(image_url):
     resp = urllib.request.urlopen(image_url)
     image = np.asarray(bytearray(resp.read()), dtype=np.uint8)
     # B G R
-    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    image = cv2.imdecode(image, cv2.IMREAD_COLOR)[:, :, ::-1]
     return image
 
 
