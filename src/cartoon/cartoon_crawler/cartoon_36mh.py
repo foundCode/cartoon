@@ -4,7 +4,7 @@ import os
 import urllib.request
 import shutil
 
-from utils import *
+from tools.utils import *
 
 
 class Cartoon36mh:

@@ -1,7 +1,80 @@
 # -*- coding: utf-8 -*-
+import cv2
+import time
+import queue
+import threading
 
-from cartoon_36mh import Cartoon36mh
-from utils import get_image_by_url
+from cartoon_crawler.cartoon_36mh import Cartoon36mh
+from tools.utils import get_image_by_url
+from tools.utils import LRUCache
+
+
+def get_init_image():
+    return cv2.imread(r'./resource/init_image.png')[:, :, ::-1]
+
+
+class CacheImage(threading.Thread):
+    def __init__(self, max_cache=10, max_preloading=10):
+        threading.Thread.__init__(self)
+        self.max_preloading = max_preloading
+
+        self.url_queue = queue.Queue()
+        self.preloading_image = {}
+        self.loading_url = None
+        self.num_preloading = 0
+
+        self.cache_image = LRUCache(max_cache)
+
+    def run(self):
+        while True:
+            if self.url_queue.empty() or self.num_preloading >= self.max_preloading or self.loading_url is not None:
+                time.sleep(.5)
+                continue
+            image_url = self.url_queue.get_nowait()
+            if self.is_cache(image_url):
+                continue
+            print('start preloading')
+            self.loading_url = image_url
+            image = get_image_by_url(image_url)
+            self.preloading_image.update({image_url: image})
+            self.num_preloading += 1
+            self.loading_url = None
+            print('preload done!!!', image_url)
+
+    def clear_preload(self):
+        self.url_queue.queue.clear()
+        self.preloading_image.clear()
+        self.num_preloading = 0
+
+    def update_url(self, urls):
+        for url in urls:
+            self.url_queue.put_nowait(url)
+
+    def get_image(self, image_url):
+        if self.is_cache(image_url) is False:
+            while self.loading_url == image_url:
+                time.sleep(.2)
+        image = self.preloading_image.get(image_url)
+        if image is not None:
+            self.preloading_image.pop(image_url)
+            self.num_preloading -= 1
+            self.cache_image.put(image_url, image)
+            return image
+        print('preloading image is none')
+        image = self.cache_image.get(image_url)
+        if image is not None:
+            return image
+        print('cache image is none')
+        self.loading_url = image_url
+        image = get_image_by_url(image_url)
+        self.loading_url = None
+        print('get_image_by_url', image_url)
+        if self.is_cache(image_url) is False:
+            self.cache_image.put(image_url, image)
+        return image
+
+    def is_cache(self, image_url):
+        return self.preloading_image.get(image_url) is not None or self.cache_image.get(image_url) is not None
 
 
 class LoadCartoon:
@@ -20,18 +93,18 @@ class LoadCartoon:
         self.fragment_index = -1
         self.num_fragment = -1
 
+        self.cache_image = CacheImage()
+        self.cache_image.start()
+
     def init_cartoon(self):
         self.cartoon_index = -1
         self.num_chapter = -1
         self.cartoon_image_url = None
+        self.chapter_title_url = []
         self.init_chapter()
 
     def init_chapter(self):
-        self.chapter_title_url = []
         self.chapter_index = -1
-        self.init_fragment()
-
-    def init_fragment(self):
         self.fragment_image_urls = []
         self.fragment_index = -1
         self.num_fragment = -1
@@ -39,17 +112,19 @@ class LoadCartoon:
     def search(self, search_text):
         if len(search_text) == 0:
             return []
+        print(search_text)
         cartoon_urls, cartoon_titles = self.cartoon_36mh.search(search_text)
-        print(cartoon_urls)
         self.cartoon_title_url.clear()
         num_cartoon = len(cartoon_urls)
         for i in range(num_cartoon):
             self.cartoon_title_url.append({'title': cartoon_titles[i], 'url': cartoon_urls[i]})
+        print(self.cartoon_title_url)
+        print('num_cartoon =', num_cartoon)
         return cartoon_titles
 
     def select_cartoon(self, cartoon_index):
         assert 0 <= cartoon_index < len(self.cartoon_title_url)
-        self.init_chapter()
+        self.init_cartoon()
         self.cartoon_index = cartoon_index
         title_url = self.cartoon_title_url[self.cartoon_index]
         print(title_url)
@@ -65,14 +140,19 @@ class LoadCartoon:
 
         print('num_chapter =', self.num_chapter)
 
+        return chapter_titles
+
     def select_chapter(self, chapter_index):
         assert 0 <= chapter_index < self.num_chapter
-        self.init_fragment()
+        self.init_chapter()
         self.chapter_index = chapter_index
         title_url = self.chapter_title_url[self.chapter_index]
         print(title_url)
         chapter_title, chapter_url = title_url['title'], title_url['url']
         self.fragment_image_urls = self.cartoon_36mh.get_chapter_image_urls(chapter_url)
+
+        self.cache_image.clear_preload()
+        self.cache_image.update_url(self.fragment_image_urls)
 
         self.fragment_index = 0
         self.num_fragment = len(self.fragment_image_urls)
@@ -81,15 +161,15 @@ class LoadCartoon:
 
     def get_cartoon_title_url(self):
         if self.cartoon_index == -1:
-            return None, None
+            return None
         title_url = self.cartoon_title_url[self.cartoon_index]
-        return title_url['title'], title_url['url']
+        return title_url
 
     def get_chapter_title_url(self):
         if self.chapter_index == -1:
-            return None, None
+            return None
         title_url = self.chapter_title_url[self.chapter_index]
-        return title_url['title'], title_url['url']
+        return title_url
 
     def get_cartoon_image(self):
         if self.cartoon_image_url is None:
@@ -105,19 +185,21 @@ class LoadCartoon:
             if self.chapter_index > 0:
                 self.chapter_index -= 1
                 self.select_chapter(self.chapter_index)
+                self.fragment_index = self.num_fragment - 1
             else:
                 return None
         return self.get_current_fragment_image()
 
     def get_current_fragment_image(self, fragment_index=-1):
-        assert fragment_index == -1 or 0 <= fragment_index < self.num_fragment
-        if self.fragment_index == -1:
+        assert fragment_index == -1 or fragment_index >= 0
+        if self.fragment_index == -1 or fragment_index >= self.num_fragment:
             return None
         if fragment_index != -1:
             self.fragment_index = fragment_index
         image_url = self.fragment_image_urls[self.fragment_index]
         print('fragment_index =', self.fragment_index, image_url)
-        return get_image_by_url(image_url)
+        image = self.cache_image.get_image(image_url)
+        return image
 
     def get_next_fragment_image(self):
         if self.fragment_index == -1:
@@ -131,37 +213,3 @@ class LoadCartoon:
             else:
                 return None
         return self.get_current_fragment_image()
-
-
-def main():
-    import cv2
-    load_cartoon = LoadCartoon()
-    load_cartoon.search('天空')
-    load_cartoon.select_cartoon(0)
-    load_cartoon.select_chapter(0)
-    image = load_cartoon.get_current_fragment_image()
-    cv2.imshow('image', image)
-    cv2.waitKey()
-    image = load_cartoon.get_previous_fragment_image()
-    if image is not None:
-        print('image is none')
-        cv2.imshow('image', image)
-        cv2.waitKey()
-    while True:
-        opt = input('input = ')
-        if opt == 'p':
-            image = load_cartoon.get_previous_fragment_image()
-        elif opt == 'n':
-            image = load_cartoon.get_next_fragment_image()
-        elif opt == 'c':
-            image = load_cartoon.get_current_fragment_image()
-        elif opt.isnumeric():
-            image = load_cartoon.get_current_fragment_image(int(opt))
-        if image is None:
-            break
-        cv2.imshow('image', image)
-        cv2.waitKey()
-
-
-if __name__ == '__main__':
-    main()

@@ -1,9 +1,9 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-import cartoon
-from cartoon_ui import Ui_CartoonWindow
-from ui_utils import label_set_image
+from core.cartoon import get_init_image, LoadCartoon
+from ui.cartoon_ui import Ui_CartoonWindow
+from tools.ui_utils import label_set_image
 
 CURRENT_FRAGMENT = -1
 PREVIOUS_FRAGMENT = -2
@@ -15,9 +15,9 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
         super(CartoonUI, self).__init__()
         self.setupUi(self)
 
-        self.init_image = cartoon.get_init_image()
+        self.init_image = get_init_image()
 
-        self.load_cartoon = cartoon.LoadCartoon()
+        self.load_cartoon = LoadCartoon()
         self.cartoon_titles = []
         self.chapter_titles = []
 
@@ -47,7 +47,7 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
 
     def init_fragment(self):
         label_set_image(self.label_fragment_image, self.init_image)
-        self.label_chapter_title.setText('{}  ('.format(' 0 话'))
+        self.label_chapter_title.setText('{}  ('.format('0 话'))
         self.line_edit_fragment_index.setText(str(0))
         self.label_num_fragment.setText('/{})'.format(0))
 
