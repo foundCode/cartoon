@@ -141,3 +141,6 @@ class LRUCache:
         self.cache.pop(key)
         self.remove_node(node)
         self.num_cache -= 1
+
+    def is_cache(self, key):
+        return self.cache.get(key) is not None
