@@ -4,8 +4,8 @@ from PyQt5.QtCore import Qt, QThread, QStringListModel
 
 
 def label_set_image(label, image):
-    shape = np.shape(image)
-    image = QImage(bytes(image), shape[1], shape[0], shape[1] * 3, QImage.Format_RGB888)
+    image_height, image_width = np.shape(image)[:2]
+    image = QImage(bytes(image), image_width, image_height, image_width * 3, QImage.Format_RGB888)
     width = label.width()
     height = label.height()
     pix = QPixmap.fromImage(image)

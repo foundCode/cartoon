@@ -1,8 +1,6 @@
 import re
 import time
 import requests
-import urllib.request
-import cv2
 import numpy as np
 from selenium import webdriver
 from bs4 import BeautifulSoup
