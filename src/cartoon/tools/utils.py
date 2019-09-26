@@ -6,6 +6,8 @@ import cv2
 import numpy as np
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from PIL import Image
+from io import BytesIO
 
 
 def validate_title(title):
@@ -41,10 +43,22 @@ def get_soup(url, params=None, cookies=None):
 
 
 def get_image_by_url(image_url):
-    resp = urllib.request.urlopen(image_url)
-    image = np.asarray(bytearray(resp.read()), dtype=np.uint8)
-    # B G R
-    image = cv2.imdecode(image, cv2.IMREAD_COLOR)[:, :, ::-1]
+    # video = cv2.VideoCapture(image_url)
+    # print(video.isOpened())
+    # ret, image = video.read()
+
+    # resp = urllib.request.urlopen(image_url)
+    # image = np.asarray(bytearray(resp.read()), dtype=np.uint8)
+    # image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    # if np.ndim(image) == 3 and np.shape(image)[2] == 3:
+    #     image = image[:, :, ::-1]
+
+    response = requests.get(image_url)
+    image = np.array(Image.open(BytesIO(response.content)), np.uint8)
+    if np.ndim(image) == 3 and np.shape(image)[2] == 4:
+        image = image[:, :, 0:3]
+    elif np.ndim(image) == 2:
+        image = np.tile(image[:, :, np.newaxis], [1, 1, 3])
     return image
 
 
