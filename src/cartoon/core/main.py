@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from core.cartoon import get_init_image, LoadCartoon
@@ -127,6 +128,14 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
         self.line_edit_fragment_index.setFocusPolicy(QtCore.Qt.ClickFocus)
         if (fragment_image == np.zeros([1, 1], dtype=np.uint8)).all():
             return
+
+        label_width = self.label_fragment_image.width()
+        image_height, image_width = np.shape(fragment_image)[:2]
+        label_height = round(label_width * (image_height / image_width))
+        self.label_fragment_image.setFixedHeight(label_height)
+        self.scroll_area_widget_contents.setFixedHeight(label_height)
+        self.scroll_area_show_fragment.verticalScrollBar().setValue(0)
+
         label_set_image(self.label_fragment_image, fragment_image)
         self.label_chapter_title.setText('{}  ('.format(self.load_cartoon.get_chapter_title_url()['title']))
         self.line_edit_fragment_index.setText(str(self.load_cartoon.fragment_index + 1))
