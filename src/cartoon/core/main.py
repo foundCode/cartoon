@@ -48,11 +48,9 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
         self.list_view_chapter_title.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.line_edit_fragment_index.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('^[0-9]*[1-9][0-9]*$')))
 
-        self.init_cartoon()
-
     def init_cartoon(self):
         label_set_image(self.label_cartoon_image, self.init_image)
-        self.label_cartoon_title.setText('漫画名称')
+        self.label_cartoon_title.setText('漫画名')
         self.list_view_chapter_title.setModel(QtCore.QStringListModel())
         self.init_fragment()
 
@@ -64,7 +62,7 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
 
         self.push_button_previous_fragment.setEnabled(False)
         self.push_button_next_fragment.setEnabled(False)
-        self.line_edit_fragment_index.setEnabled(False)
+        self.line_edit_fragment_index.setFocusPolicy(QtCore.Qt.NoFocus)
 
     @QtCore.pyqtSlot(name='push_button_search_clicked')
     def push_button_search_clicked(self):
@@ -119,23 +117,29 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
     def update_fragment_image(self, fragment_index=LoadCartoon.CURRENT_FRAGMENT):
         self.push_button_previous_fragment.setEnabled(False)
         self.push_button_next_fragment.setEnabled(False)
-        self.line_edit_fragment_index.setEnabled(False)
+        self.line_edit_fragment_index.setFocusPolicy(QtCore.Qt.NoFocus)
         self.task_load_fragment.set_kwargs(fragment_index=fragment_index)
         self.task_load_fragment.start()
 
     def show_fragment_image(self, fragment_image=None):
+        self.push_button_previous_fragment.setEnabled(True)
+        self.push_button_next_fragment.setEnabled(True)
+        self.line_edit_fragment_index.setFocusPolicy(QtCore.Qt.ClickFocus)
         if (fragment_image == np.zeros([1, 1], dtype=np.uint8)).all():
             return
         label_set_image(self.label_fragment_image, fragment_image)
         self.label_chapter_title.setText('{}  ('.format(self.load_cartoon.get_chapter_title_url()['title']))
         self.line_edit_fragment_index.setText(str(self.load_cartoon.fragment_index + 1))
         self.label_num_fragment.setText('/{})'.format(self.load_cartoon.num_fragment))
-        self.push_button_previous_fragment.setEnabled(True)
-        self.push_button_next_fragment.setEnabled(True)
-        self.line_edit_fragment_index.setEnabled(True)
 
     def close(self):
         self.close()
+
+    def show(self):
+        super().show()
+        # 在 show 前进行初始化时，使用 label 显示的图像不会随 label 的大小进行缩放
+        # label 的 width 和 height 在 show 前没有更新
+        self.init_cartoon()
 
 
 if __name__ == '__main__':
