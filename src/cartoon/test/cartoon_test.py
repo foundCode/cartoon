@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
+import tools.utils as utils
+
 
 class O:
     def __init__(self):
@@ -53,6 +55,18 @@ def main():
     q = np.zeros([1], np.uint8)
     print(p, q)
     print(p == q)
+
+    import cv2
+    # # 'http://wx2.sinaimg.cn/mw690/ac38503ely1fesz8m0ov6j20qo140dix.jpg'
+    # # 'https://img001.yayxcc.com/images/cover/201806/1530069619_IvNKW-FN1aH4yUA.jpg'
+    image_url = 'https://img001.yayxcc.com/images/comic/10/19457/1520719203ZPP2vxH5Xj_k5EaN.jpg'
+    image = utils.get_image_by_url(image_url)
+    print(np.shape(image))
+    if image is None:
+        print('image is none')
+    else:
+        cv2.imshow('image', image)
+        cv2.waitKey()
 
 
 if __name__ == '__main__':

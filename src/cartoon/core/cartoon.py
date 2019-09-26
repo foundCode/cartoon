@@ -10,7 +10,7 @@ from tools.utils import LRUCache
 
 
 def get_init_image():
-    return cv2.imread(r'./resource/init_image.png')[:, :, ::-1]
+    return cv2.imread(r'resource\init_image.png')[:, :, ::-1]
 
 
 class CacheImage(threading.Thread):
@@ -144,6 +144,7 @@ class LoadCartoon:
             return []
         print(search_text)
         self.cartoon_urls, self.cartoon_titles = self.cartoon_36mh.search(search_text)
+        self.cartoon_index = -1
         print('num_cartoon =', len(self.cartoon_titles))
 
     def select_cartoon(self, cartoon_index):

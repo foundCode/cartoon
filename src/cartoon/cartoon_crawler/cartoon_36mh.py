@@ -10,6 +10,7 @@ from tools.utils import *
 class Cartoon36mh:
     def __init__(self):
         self.home_url = 'https://36mh.com'
+        self.chapter_formats = ['ul[id="chapter-list-30"]>li>a', 'ul[id="chapter-list-4"]>li>a']
         self.browser_tool = BrowserTool()
 
     def search(self, keyword):
@@ -34,15 +35,16 @@ class Cartoon36mh:
 
     def get_chapters(self, cartoon_url):
         soup = get_soup(cartoon_url)
-        li_chapters = soup.select('ul[id="chapter-list-4"]>li>a')
-
         list_chapter = []
         urls = []
-        for chapter in li_chapters:
-            text = chapter.select_one('span').get_text()
-            url = chapter['href']
-            list_chapter.append(text)
-            urls.append(self.home_url + url)
+
+        for chapter_format in self.chapter_formats:
+            li_chapters = soup.select(chapter_format)
+            for chapter in li_chapters:
+                text = chapter.select_one('span').get_text()
+                url = chapter['href']
+                list_chapter.append(text)
+                urls.append(self.home_url + url)
 
         return list_chapter, urls
 
