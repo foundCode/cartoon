@@ -29,4 +29,4 @@ class TaskLoadFragment(AsynchronousTask):
     signal = pyqtSignal(np.ndarray)
 
     def __init__(self, task):
-        super().__init__(task, 1, np.zeros([1, 1], dtype=np.uint8))
+        super().__init__(task, 1, np.zeros([1], dtype=np.uint8))

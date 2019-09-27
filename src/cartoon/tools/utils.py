@@ -66,13 +66,13 @@ class BrowserTool:
         option.add_argument('--headless')
         self.browser = webdriver.Chrome(executable_path=chrome_exe_path, chrome_options=option)
 
-    def __del__(self):
-        self.browser.quit()
-
     def get_page_source(self, url):
         self.browser.get(url)
         time.sleep(.5)
         return self.browser.page_source
+
+    def close(self):
+        self.browser.quit()
 
 
 class LRUCache:
@@ -83,21 +83,21 @@ class LRUCache:
             self.previous = None
             self.next = None
 
-    def remove_node(self, node):
+    def __remove_node(self, node):
         node.previous.next = node.next
         node.next.previous = node.previous
         node.previous = None
         node.next = None
 
-    def add_node(self, node):
+    def __add_node(self, node):
         node.next = self.head.next
         node.previous = self.head
         self.head.next.previous = node
         self.head.next = node
 
-    def move_to_head(self, node):
-        self.remove_node(node)
-        self.add_node(node)
+    def __move_to_head(self, node):
+        self.__remove_node(node)
+        self.__add_node(node)
 
     def __init__(self, capacity=10, default_value=None):
         self.capacity = capacity
@@ -117,24 +117,24 @@ class LRUCache:
         node = self.cache.get(key)
         if node is None:
             return self.default_value
-        self.move_to_head(node)
+        self.__move_to_head(node)
         return node.value
 
     def put(self, key, value):
         node = self.cache.get(key)
         if node is not None:
             node.value = value
-            self.move_to_head(node)
+            self.__move_to_head(node)
             return
         if self.num_cache == self.capacity:
             node = self.tail.previous
             self.cache.pop(node.key)
-            self.remove_node(self.tail)
+            self.__remove_node(self.tail)
             self.tail = node
             self.num_cache -= 1
         node = self.Node(key, value)
         self.cache.update({key: node})
-        self.add_node(node)
+        self.__add_node(node)
         self.num_cache += 1
 
     def popitem(self):
@@ -142,7 +142,7 @@ class LRUCache:
             return
         node = self.tail.previous
         self.cache.pop(node.key)
-        self.remove_node(self.tail)
+        self.__remove_node(self.tail)
         self.tail = node
         self.num_cache -= 1
 
@@ -151,7 +151,7 @@ class LRUCache:
         if node is None:
             return
         self.cache.pop(key)
-        self.remove_node(node)
+        self.__remove_node(node)
         self.num_cache -= 1
 
     def is_cache(self, key):

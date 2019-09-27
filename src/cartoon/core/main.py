@@ -18,20 +18,17 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
         self.setupUi(self)
 
         self.init_image = get_init_image()
-
         self.load_cartoon = LoadCartoon()
 
         self.init_ui()
 
+        self.mini_fragment_height = 0
         self.task_search = TaskSearch(self.load_cartoon.search)
         self.task_search.signal.connect(self.update_list_view_cartoon)
-
         self.task_select_cartoon = TaskSelectCartoon(self.load_cartoon.select_cartoon)
         self.task_select_cartoon.signal.connect(self.show_cartoon)
-
         self.task_select_chapter = TaskSelectChapter(self.load_cartoon.select_chapter)
         self.task_select_chapter.signal.connect(self.update_fragment_image)
-
         self.task_load_fragment = TaskLoadFragment(self.load_cartoon.get_fragment_image)
         self.task_load_fragment.signal.connect(self.show_fragment_image)
 
@@ -126,12 +123,12 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
         self.push_button_previous_fragment.setEnabled(True)
         self.push_button_next_fragment.setEnabled(True)
         self.line_edit_fragment_index.setFocusPolicy(QtCore.Qt.ClickFocus)
-        if (fragment_image == np.zeros([1, 1], dtype=np.uint8)).all():
+        if np.ndim(fragment_image) < 2:
             return
 
         label_width = self.label_fragment_image.width()
         image_height, image_width = np.shape(fragment_image)[:2]
-        label_height = round(label_width * (image_height / image_width))
+        label_height = min(self.mini_fragment_height, round(label_width * (image_height / image_width)))
         self.label_fragment_image.setFixedHeight(label_height)
         self.scroll_area_widget_contents.setFixedHeight(label_height)
         self.scroll_area_show_fragment.verticalScrollBar().setValue(0)
@@ -141,14 +138,16 @@ class CartoonUI(QtWidgets.QMainWindow, Ui_CartoonWindow):
         self.line_edit_fragment_index.setText(str(self.load_cartoon.fragment_index + 1))
         self.label_num_fragment.setText('/{})'.format(self.load_cartoon.num_fragment))
 
-    def close(self):
-        self.close()
-
     def show(self):
         super().show()
         # 在 show 前进行初始化时，使用 label 显示的图像不会随 label 的大小进行缩放
         # label 的 width 和 height 在 show 前没有更新
         self.init_cartoon()
+        self.mini_fragment_height = self.label_fragment_image.height()
+
+    def closeEvent(self, *args, **kwargs):
+        self.load_cartoon.close()
+        print('close')
 
 
 if __name__ == '__main__':

@@ -24,11 +24,12 @@ class CacheImage(threading.Thread):
         self.num_preloading = 0
 
         self.cache_image = LRUCache(max_cache)
+        self.exit = False
 
     def run(self):
-        while True:
+        while not self.exit:
             if self.url_queue.empty() or self.num_preloading >= self.max_preloading or self.loading_url is not None:
-                time.sleep(.5)
+                time.sleep(1.)
                 continue
             image_url = self.url_queue.get_nowait()
             if self.is_cache(image_url):
@@ -40,6 +41,7 @@ class CacheImage(threading.Thread):
             self.num_preloading += 1
             self.loading_url = None
             print('preload done!!!', image_url)
+        print('CacheImage stop!!!')
 
     def clear_preload(self):
         self.url_queue.queue.clear()
@@ -65,38 +67,20 @@ class CacheImage(threading.Thread):
         print('cache image is none')
         self.loading_url = image_url
         image = get_image_by_url(image_url)
-        self.loading_url = None
         print('get_image_by_url', image_url)
         if self.is_cache(image_url) is False:
             self.cache_image.put(image_url, image)
+        self.loading_url = None
 
     def get_image(self, image_url):
         self.load_image(image_url)
         return self.cache_image.get(image_url)
-        # if self.is_cache(image_url) is False:
-        #     while self.loading_url == image_url:
-        #         time.sleep(.2)
-        # image = self.preloading_image.get(image_url)
-        # if image is not None:
-        #     self.preloading_image.pop(image_url)
-        #     self.num_preloading -= 1
-        #     self.cache_image.put(image_url, image)
-        #     return image
-        # print('preloading image is none')
-        # image = self.cache_image.get(image_url)
-        # if image is not None:
-        #     return image
-        # print('cache image is none')
-        # self.loading_url = image_url
-        # image = get_image_by_url(image_url)
-        # self.loading_url = None
-        # print('get_image_by_url', image_url)
-        # if self.is_cache(image_url) is False:
-        #     self.cache_image.put(image_url, image)
-        # return image
 
     def is_cache(self, image_url):
         return self.preloading_image.get(image_url) is not None or self.cache_image.is_cache(image_url)
+
+    def close(self):
+        self.exit = True
 
 
 class LoadCartoon:
@@ -136,6 +120,7 @@ class LoadCartoon:
     def init_chapter(self):
         self.chapter_index = -1
         self.fragment_image_urls = []
+        self.cache_image.clear_preload()
         self.fragment_index = -1
         self.num_fragment = -1
 
@@ -173,7 +158,6 @@ class LoadCartoon:
         print(chapter_title, chapter_url)
         self.fragment_image_urls = self.cartoon_36mh.get_chapter_image_urls(chapter_url)
 
-        self.cache_image.clear_preload()
         self.cache_image.update_url(self.fragment_image_urls)
 
         self.fragment_index = 0
@@ -252,3 +236,7 @@ class LoadCartoon:
             else:
                 return None
         return self.get_current_fragment_image()
+
+    def close(self):
+        self.cache_image.close()
+        # self.cache_image.join()
